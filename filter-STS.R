@@ -64,14 +64,20 @@ get_help <- function(){
 # add format validation, what if columns are missing
 
 #set defaults
-Columns_Remove <- toupper(c("MatFName", "MatLName", "MatMInit", "MatMName", 
-                            "MatNameKnown", "MatSSN", "MatSSNKnown", "MEDRECN", 
-                            "PARTICID", "PATFNAME", "PATID", "PATLNAME", "PATMNAME",
+Columns_Remove <- toupper(c("MEDRECN", 
+                            "PATFNAME", "PATID", "PATLNAME", "PATMNAME",
                             "PATPOSTALCODE", "PATREGION", "BIRTHCIT", "BIRTHSTA", "HOSPNAME",
                             "HOSPNPI", "HOSPID", "HOSPZIP", "HOSPSTAT", "SURGEON", 
                             "SURGEONID", "SURGNPI", "TIN",
-                            "ASSTSURGEON", "ASSTSURGNPI", "ASSTSURGEONID"))
-ZIP_OUTPUT_TABLES=FALSE
+                            "ASSTSURGEON", "ASSTSURGNPI", "ASSTSURGEONID",
+                            "HICNUMBER", "PATMINIT", "PATCOUNTRY", 
+                            "MATNAMEKNOWN", "MATSSNKNOWN", "MATLNAME", "MATFNAME", "MATMINIT", 
+                            "MATMNAME", "MATSSN", "PARTICID", "VENDORID",
+                            "CNSLTATTND", "CNSLTATTNDID", "ATTENDSURG", "SURGEON", "SURGEONID", "SURGNPI", "ASSTSURGEON",
+                            "ASSTSURGEONID", "ASSTSURGNPI", "RESIDENT", "RESIDENTID", "HOSPZIP", "HOSPNPI", "REFCARD",
+                            "REFPHYS", "HANDOFFANESTH", "HANDOFFSURG", "HANDOFFPHYSSTAFF", "HANDOFFNURSING", "PRIMANESNAME",
+                            "PRIMANESNPI", "SECANES", "SECANESNAME", "CRNA", "CRNANAME", "NONCVPHYS", "FELRES"))
+ZIP_OUTPUT_TABLES=TRUE
 
 #get command-line arguments:
 args <- commandArgs(trailingOnly = TRUE)
@@ -86,6 +92,9 @@ for (i in seq_along(args)) {
 {break}
   )
 }
+
+data.file <- "~/OneDrive/Grants/Active/B2B/STS/50010con.dat.txt"
+case.file <- "~/OneDrive/Grants/Active/B2B/STS/cases.txt"
 
 #check installed packages and minimum versions
 use <- function(package, version=0, ...) {
@@ -102,7 +111,7 @@ use <- function(package, version=0, ...) {
 }
 
 message("Checking Installed Packages...")
-suppressMessages(use(dplyr, '0.4.2'))
+suppressMessages(use(dplyr, '0.4.2')) ## update, also check how to auto-install
 suppressMessages(use(gtools, '3.5.0'))
 #suppressMessages(use(rowr, '1.1.2')) - doesn't exist any more.
 
@@ -132,6 +141,10 @@ message("Read ", nrow(Case.Master), " IDs from case file ", case.file)
 message("Processing and Filtering tables...")
 STS <- STS[sapply(STS, nchar) > 0]
 
+## check for existence of PATID and OPERATIONID in every frame....
+
+# report on number of rows and columns in every frame
+
 #split tables
 start <- grep("^[*][*][*]", STS)
 mark <- vector('integer', length(STS))
@@ -143,14 +156,19 @@ df <- lapply(split(STS, mark), function(.data){
     .input <- read.table(textConnection(.data), skip=1, header=TRUE, 
                          sep="|", quote="\"", stringsAsFactors=FALSE)
     attr(.input, 'name') <- gsub("[*]", "", .data[1])  # save the name 
+    #message(c("Read "), attr(.input, 'name'))
     .input
     #output name of table that was just read as debugging information?
   })
 names(df) <- sapply(df, attr, 'name')
 
-message(c("Read the following tables from ", data.file, ":\n"))
+message(c("Successfully read the following tables from ", data.file, ":\n"))
 
-message(cat(names(df),sep="\n"))
+#message(cat(names(df),sep="\n"))
+
+df <- lapply(df, function(.table) {
+  message(c("Table ", attr(.table, "name"), " with ", dim(.table)[1], " rows and ", dim(.table)[2], " columns."))
+})
 
 #Remove nulls (tables with no header and no rows)
 nulls <- sapply(df, is.null)
@@ -168,12 +186,14 @@ if (PATID_CLASS_CHARACTER) {
     if ("PATID" %in% names(.table)) {
       .table$PATID <- as.character(.table$PATID)
     }
+    names(.table) <- toupper(names(.table))
+    message(names(.table),sep="")
     return(.table)
   })
 }
 
-names(df$Demographics) <- toupper(names(df$Demographics))
-names(df$Operations) <- toupper(names(df$Operations))
+#names(df$Demographics) <- toupper(names(df$Demographics))
+#names(df$Operations) <- toupper(names(df$Operations))
 #unclear if we need to check other tables for sensitive data.....
 
 #Add PATID to Case.Master
@@ -203,11 +223,16 @@ df <- lapply(df, function(.table) {
 
 #Use Case.Master to add PCGC.BLINDED.ID to all tables
 df <- lapply(df, function(.table){
-    if (invalid(.table)) return(.table)
+    if (invalid(.table)) 
+      {
+        message()
+        return(.table)
+      }
     if ("OPERATIONID" %in% names(.table)) {
       .table <- suppressMessages(left_join(.table, unique(select(Case.Master, 
-                                                                 PCGC.BLINDED.ID, PATID, OPERATIONID), 
-                                                          by=c("PATID", "OPERATIONID"))))
+                                                          PCGC.BLINDED.ID, PATID, OPERATIONID), 
+                                                          # by=c("PATID", "OPERATIONID"))))
+                                                          by=c("OPERATIONID"))))
     } else {
       .table <- suppressMessages(left_join(.table, unique(select(Case.Master, 
                                                                  PCGC.BLINDED.ID, PATID), 
@@ -224,13 +249,15 @@ df <- lapply(df, function(.table){
   col_idx <- grep("PCGC.BLINDED.ID", names(.table))
   .table <- .table[, c(col_idx, (1:ncol(.table))[-col_idx])]
   #.table <- suppressMessages(.table %>% select(-one_of(Columns_Remove))) # how to avoid warnings??
+  .table <- .table[,!(names(df$Operations) %in% Columns_Remove)]
    .table
 })
 
-df$Demographics <- df$Demographics[,!(names(df$Demographics) %in% Columns_Remove)]
-df$Operations <- df$Operations[,!(names(df$Operations) %in% Columns_Remove)]
+#df$Demographics <- df$Demographics[,!(names(df$Demographics) %in% Columns_Remove)]
+#df$Operations <- df$Operations[,!(names(df$Operations) %in% Columns_Remove)]
 
 
+#DO WE NEED THIS????
 #df is the final list of tables.
 #to make a wide table, need to split the tables into 2 groups.
 #GROUP_1 is grouped by PCGC.BLINDED.ID
@@ -403,7 +430,9 @@ for (.table_name in names(df)) {
                                sep="\t", quote=FALSE, row.names=FALSE, 
                                col.names=TRUE))
 }
-if (ZIP_OUTPUT_TABLES) {
+
+# sys.info will give information about Windows vs. Mac/Linux
+if (ZIP_OUTPUT_TABLES) { # assumes UNIX system
   ZIP_COMMAND <- paste("zip -rm STS_tables.zip", paste(OUTPUT_FILE_vec, collapse=" "))
-  system(ZIP_COMMAND, ignore.stdout=TRUE)
+  system(ZIP_COMMAND, ignore.stdout=TRUE) 
 }
