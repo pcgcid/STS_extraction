@@ -1,0 +1,45 @@
+Checking Installed Packages...
+Found 2 PCGC participant(s) and 2 unique MRN(s) in ~/Documents/GitHub/STS_extraction/MRN_PCGC.txt.
+
+
+Successfully read the following tables from ~/Documents/GitHub/STS_extraction/STS_dummy_data.txt:
+Table Demographics with 4 rows and 72 columns.
+Table Operations with 5 rows and 864 columns.
+Table NCAbnormality with 6 rows and 3 columns.
+Table NCAA with 4 rows and 3 columns.
+Table Syndromes with 6 rows and 3 columns.
+Table ChromAbnormalities with 9 rows and 3 columns.
+Table PreopFactors with 7 rows and 3 columns.
+Table Diagnosis with 5 rows and 3 columns.
+Table Procedures with 7 rows and 3 columns.
+Table Complications with 5 rows and 3 columns.
+Found 2 PCGC participant(s) in Demographics table.
+
+
+After filtering rows:
+Table Demographics with 2 rows and 73 columns.
+Table Operations with 4 rows and 865 columns.
+Table NCAbnormality with 5 rows and 4 columns.
+Table NCAA with 2 rows and 4 columns.
+Table Syndromes with 2 rows and 4 columns.
+Table ChromAbnormalities with 2 rows and 4 columns.
+Table PreopFactors with 4 rows and 5 columns.
+Table Diagnosis with 5 rows and 5 columns.
+Table Procedures with 5 rows and 5 columns.
+Table Complications with 3 rows and 5 columns.
+
+
+Writing 2 records to Demographics.txt
+Writing 4 records to Operations.txt
+Writing 5 records to NCAbnormality.txt
+Writing 2 records to NCAA.txt
+Writing 2 records to Syndromes.txt
+Writing 2 records to ChromAbnormalities.txt
+Writing 4 records to PreopFactors.txt
+Writing 5 records to Diagnosis.txt
+Writing 5 records to Procedures.txt
+Writing 3 records to Complications.txt
+
+Zipped up all files into STS_tables.zip!
+Done.
+

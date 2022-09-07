@@ -299,4 +299,6 @@ for (.table_name in names(df)) {
 if (ZIP_OUTPUT_TABLES) { # assumes UNIX system
   ZIP_COMMAND <- paste("zip -rm STS_tables.zip", paste(OUTPUT_FILE_vec, collapse=" "))
   system(ZIP_COMMAND, ignore.stdout=TRUE) 
+  message("\nZipped up all files into STS_tables.zip!")
 }
+message("Done.")
