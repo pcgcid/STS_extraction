@@ -28,7 +28,7 @@ get_help <- function(){
       --help (prints this help message and exits)
     
     WHERE:
-      *STS.datafile.txt is a flat text file of the STS data
+      *STS.datafile.txt is a flat text file of the site's STS data
       containing concatenated tables, each table separated by
       by a table name of the format:
         ***Table-name
@@ -99,7 +99,9 @@ for (i in seq_along(args)) {
 #data.file <- "~/OneDrive/Grants/Active/B2B/STS/50010con.dat.txt"
 #case.file <- "~/OneDrive/Grants/Active/B2B/STS/cases.txt"
 
+###############################
 #check installed packages and minimum versions
+###############################
 use <- function(package, version=0, ...) {
   package <- as.character(substitute(package))
   if (!require(package, ..., character.only=TRUE, quietly=TRUE))
@@ -117,8 +119,13 @@ message("Checking Installed Packages...")
 suppressMessages(use(dplyr, '1.0.9')) ## check how to auto-install as package dependency?
 suppressMessages(use(gtools, '3.9.0'))
 
+
+#################################
 #Read in data
-message("Reading in Data...")
+#################################
+#message("Reading in Data...")
+
+#read in STS data 
 if (!file.exists(data.file))
   stop("Data file '", data.file,
        "' not found. Please check your command line argument.")
@@ -133,11 +140,18 @@ closeAllConnections()
 # read in case list, check column headers
 Case.Master <- read.delim(case.file, stringsAsFactors=F, colClasses = "character")
 names(Case.Master) <- toupper(names(Case.Master)) #standardize to avoid trouble
+# basic sanity check - need those columns to be there
 check_cols <- c("MEDRECN", "PCGC.BLINDED.ID")
 if (!(sum(check_cols %in% names(Case.Master)) == 2 & ncol(Case.Master) == 2)) {
   stop("list.of.cases file has either incorrect header or incorrect column number.")
 }
-message("Read ", nrow(Case.Master), " IDs from case file ", case.file)
+message("Read ", nrow(Case.Master), "PCGC IDs from case file ", case.file)
+
+no_pcgc_ids <- dim(unique(select(Case.Master,PCGC.BLINDED.ID)))[1]
+no_mrns <- dim(unique(select(Case.Master,MEDRECN)))[1]
+if (no_pcgc_ids != no_mrns) warning(c("Number of unique MRNs (", no_mrns, ") different from number of unique PCGC IDs (", no_pcgc_ids, ")"))
+
+message(c("Found ", no_pcgc_ids, " PCGC participant(s) and ", no_mrns, " unique MRN(s) in ", case.file, ".\n"))
 
 #Remove blank lines
 #message("Processing and Filtering tables...")
