@@ -96,8 +96,8 @@ for (i in seq_along(args)) {
   )
 }
 
-#data.file <- "~/OneDrive/Grants/Active/B2B/STS/50010con.dat.txt"
-#case.file <- "~/OneDrive/Grants/Active/B2B/STS/cases.txt"
+data.file <- "~/Documents/GitHub/STS_extraction/STS_dummy_data.txt"
+case.file <- "~/Documents/GitHub/STS_extraction/MRN_PCGC.txt"
 
 ###############################
 #check installed packages and minimum versions
@@ -145,7 +145,7 @@ check_cols <- c("MEDRECN", "PCGC.BLINDED.ID")
 if (!(sum(check_cols %in% names(Case.Master)) == 2 & ncol(Case.Master) == 2)) {
   stop("list.of.cases file has either incorrect header or incorrect column number.")
 }
-message("Read ", nrow(Case.Master), "PCGC IDs from case file ", case.file)
+#message("Read ", nrow(Case.Master), "PCGC IDs from case file ", case.file)
 
 no_pcgc_ids <- dim(unique(select(Case.Master,PCGC.BLINDED.ID)))[1]
 no_mrns <- dim(unique(select(Case.Master,MEDRECN)))[1]
@@ -157,7 +157,7 @@ message(c("Found ", no_pcgc_ids, " PCGC participant(s) and ", no_mrns, " unique 
 #message("Processing and Filtering tables...")
 STS <- STS[sapply(STS, nchar) > 0]
 
-#split tables
+#split tables into data frames
 start <- grep("^[*][*][*]", STS)
 mark <- vector('integer', length(STS))
 mark[start] <- 1
@@ -199,16 +199,19 @@ if (length(names(df[nulls])))
 
 #Add PCGC identifiers.
 #First, adjust class of PATID across all tables so that they are consistent.
-PATID_CLASS_CHARACTER <- any(sapply(df, function(.table) is.character(.table$PATID)))
-if (PATID_CLASS_CHARACTER) {
-  df <- lapply(df, function(.table) {
-    if ("PATID" %in% names(.table)) {
-      .table$PATID <- as.character(.table$PATID)
-    }
-    #names(.table) <- toupper(names(.table)) # obsolete
-    return(.table)
-  })
-}
+#PATID_CLASS_CHARACTER <- any(sapply(df, function(.table) is.character(.table$PATID)))
+#if (PATID_CLASS_CHARACTER) {
+df <- lapply(df, function(.table) {
+  if ("PATID" %in% names(.table)) {
+    .table$PATID <- as.character(.table$PATID)
+  }
+  if ("MEDRECN" %in% names(.table)) {
+    .table$MEDRECN <- as.character(.table$MEDRECN)
+  }
+  #names(.table) <- toupper(names(.table)) # obsolete
+  return(.table)
+})
+#}
 
 #Add PATID to Case.Master
 Case.Master <- left_join(Case.Master,
