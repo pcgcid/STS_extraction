@@ -6,7 +6,8 @@ Michael Wagner
 Division of Biomedical Informatics
 Cincinnati Children's Hospital Medical Center
 September, 2022
-based on code by 
+
+based on a previous version of code by 
 
 Jason Homsy, M.D., Ph.D. and Marko Boskovski, M.D.
 Seidman Lab, Dept. of Genetics, Harvard Medical School
