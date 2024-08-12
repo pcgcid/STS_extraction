@@ -77,7 +77,7 @@ Columns_Remove <- toupper(c("MEDRECN",
                             "HANDOFFNURSING", "PRIMANESNAME",
                             "PRIMANESNPI", "SECANES", "SECANESNAME", "CRNA", "CRNANAME", 
                             "NONCVPHYS", "FELRES"))
-ZIP_OUTPUT_TABLES=TRUE
+#ZIP_OUTPUT_TABLES=TRUE
 #######################
 
 ############################
@@ -96,8 +96,8 @@ for (i in seq_along(args)) {
   )
 }
 
-data.file <- "~/Documents/GitHub/STS_extraction/STS_dummy_data.txt"
-case.file <- "~/Documents/GitHub/STS_extraction/MRN_PCGC.txt"
+#data.file <- "STS_dummy_data.txt"
+#case.file <- "MRN_PCGC.txt"
 
 ###############################
 #check installed packages and minimum versions
@@ -164,7 +164,11 @@ mark[start] <- 1
 mark <- cumsum(mark)
 
 df <- lapply(split(STS, mark), function(.data){
-    if (length(.data) == 1) {return(NULL)}
+    if (length(.data) == 1) {
+      .input = data.frame()
+      attr(.input, 'name') <- gsub("[*]", "", .data[1])  # save the name 
+      return(.input)
+      }
     .input <- read.table(textConnection(.data), skip=1, header=TRUE, 
                          sep="|", quote="\"", stringsAsFactors=FALSE)
     attr(.input, 'name') <- gsub("[*]", "", .data[1])  # save the name 
@@ -181,19 +185,24 @@ message(c("\nSuccessfully read the following tables from ", data.file, ":"))
 # report on number of rows and columns in every data frame / table
 df <- lapply(df, function(.table) {
   message(c("Table ", attr(.table, "name"), " with ", dim(.table)[1], " rows and ", dim(.table)[2], " columns."))
+  
+  if (dim(.table)[1] == 0) {
+    message(c("Table ", attr(.table, "name"), " has no data."))
+    return(NULL)
+  }
   ## check for existence of PATID and OPERATIONID in every frame....
   if (!(("PATID" %in% names(.table)) || ("OPERATIONID" %in% names(.table) )))
   {
-    stop(c("Table ", attr(.table, "name"), " has neither PATID nor OPERATIONID as a column."))
+    stop(paste0(c("Table ", attr(.table, "name"), " has neither PATID nor OPERATIONID as a column.")))
   }
   .table
 })
 
 #Remove nulls (tables with no header and no rows)
 nulls <- sapply(df, is.null)
-if (length(names(df[nulls])))
+if (length(names(df[nulls])) > 0)
 {
-  message(c("\nPurging ", cat(names(df[!nulls]), sep = ", ")), " due to lack of header or rows.")
+  message(paste0("\nPurging ", paste(names(df[nulls]), collapse = ", "), " due to lack of header or rows."))
   df <- df[!nulls]
 }
 
@@ -294,6 +303,8 @@ for (.table_name in names(df)) {
                                sep="\t", quote=FALSE, row.names=FALSE, 
                                col.names=TRUE))
 }
+
+if(!"ZIP_OUTPUT_TABLES" %in% ls()) {ZIP_OUTPUT_TABLES=FALSE}
 
 # sys.info will give information about Windows vs. Mac/Linux - don't do this for Windows
 if (ZIP_OUTPUT_TABLES) { # assumes UNIX system
