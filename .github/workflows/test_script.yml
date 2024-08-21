@@ -2,6 +2,7 @@ name: Test script on different OS
 
 on:
   push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
