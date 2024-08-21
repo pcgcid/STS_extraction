@@ -14,6 +14,29 @@
 # 4/14/2016: Changed all column headers in tables to upper case.
 # """"""""": Adjusted class of PATID columns to be consistent.
 # 09/02/2022: Many modifiations, sanity checks, simplifications, fixes and debug/logging information added
+# 08/20/2024: Added command line arguments, help message, and version information
+
+doc <- "
+      Usage:
+        filter-STS.R [-h | --help] [--data <data.file>] [--cases <case.file>] [--zip-output-tables]
+
+      Options:
+        -h --help             Show available parameters.
+        --data <data.file>    Specify input data file.
+        --cases <case.file>   Specify list of cases file.
+        --zip-output-tables   Zip output files if specified
+      "
+
+library(docopt)
+opt <- docopt::docopt(doc)
+
+
+# Access the parsed arguments
+data.file <- opt[["--data"]]
+case.file <- opt[["--cases"]]
+ZIP_OUTPUT_TABLES <- opt[["--zip-output-tables"]]
+
+
 
 #define function for displaying a help message with the --help command line argument
 get_help <- function(){
@@ -80,21 +103,7 @@ Columns_Remove <- toupper(c("MEDRECN",
 #ZIP_OUTPUT_TABLES=TRUE
 #######################
 
-############################
-#get command-line arguments:
-############################
-args <- commandArgs(trailingOnly = TRUE)
-shift=FALSE
-for (i in seq_along(args)) {
-  if (shift) {shift=FALSE; next}
-  switch(args[i],
-         "--data"={data.file <- args[i+1]; shift=TRUE},
-         "--cases"={case.file <- args[i+1]; shift=TRUE},
-         "--zip-output-tables"={ZIP_OUTPUT_TABLES=TRUE},
-         "--help"={get_help()},
-{break}
-  )
-}
+
 
 #data.file <- "STS_dummy_data.txt"
 #case.file <- "MRN_PCGC.txt"
@@ -178,9 +187,13 @@ df <- lapply(split(STS, mark), function(.data){
   })
 names(df) <- sapply(df, attr, 'name')
 
+tables = names(df)
 message(c("\nSuccessfully read the following tables from ", data.file, ":"))
 
-#message(cat(names(df),sep="\n"))
+
+expected_tables = c("Demographics", "Operations", "NCAbnormality", "NCAA", "Syndromes", "ChromAbnormalities",
+                    "PreopFactors", "Diagnosis", "Procedures", "Complications")
+
 
 # report on number of rows and columns in every data frame / table
 df <- lapply(df, function(.table) {
@@ -197,6 +210,20 @@ df <- lapply(df, function(.table) {
   }
   .table
 })
+
+missing = setdiff(expected_tables, tables)
+extra = setdiff(tables, expected_tables)
+
+if (length(missing) > 0) {
+  message(c("\nMissing tables: ", paste(missing, collapse=", ")))
+}
+
+if (length(extra) > 0) {
+  message(c("\nExtra tables: ", paste(extra, collapse=", ")))
+}
+
+#message(cat(names(df),sep="\n"))
+
 
 #Remove nulls (tables with no header and no rows)
 nulls <- sapply(df, is.null)
@@ -227,7 +254,7 @@ Case.Master <- left_join(Case.Master,
                          select(df$Demographics, PATID, MEDRECN),
                          by="MEDRECN")
 
-message(c("Found ", dim(unique(select(Case.Master,PATID)))[1], " PCGC participant(s) in Demographics table.\n"))
+message(c("\nFound ", dim(unique(select(Case.Master,PATID)))[1], " PCGC participant(s) in Demographics table.\n"))
 
 #Add OPERATIONID to Case.Master
 Case.Master <- left_join(Case.Master,
