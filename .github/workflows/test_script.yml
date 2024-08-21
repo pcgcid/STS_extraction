@@ -27,7 +27,7 @@ jobs:
         with:
             r-version: ${{ matrix.config.r }}
       - name: Install dependencies
-        run: Rscript -e "install.packages(c('remotes','docopt','dplyr', 'gtools')); utils::install.packages('renv')" 
+        run: Rscript -e "install.packages(c('remotes')); utils::install.packages('renv')" 
             Rscript -e "renv::restore();renv::hydrate()"
       - name: Test script
         run: Rscript entrypoint.R --data STS_dummy_data.txt --cases MRN_PCGC.txt --zip-output-tables
