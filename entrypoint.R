@@ -30,6 +30,8 @@ doc <- "
 opt <- docopt::docopt(doc)
 
 
+sink("output.log",split=TRUE)
+
 
 # Access the parsed arguments
 data.file <- opt[["--data"]]
@@ -56,10 +58,8 @@ read_data_files <- function(data.file, case.file) {
   if (!file.exists(case.file))
     stop("Case file '", case.file, "' not found. Please check your command line argument.")
   
-  con <- file(data.file, "r")
-  STS <- readLines(con)
-  closeAllConnections()
-  
+  STS <- readLines(data.file)
+
   Case.Master <- read.delim(case.file, stringsAsFactors=F, colClasses = "character")
   names(Case.Master) <- toupper(names(Case.Master))
   
@@ -104,16 +104,16 @@ process_and_filter_tables <- function(STS) {
 # Function to clean up and validate tables
 validate_tables <- function(df) {
   tables <- names(df)
-  message(c("\nSuccessfully read the following tables from ", data.file, ":"))
+  cat(c("\nSuccessfully read the following tables from ", data.file, ":"))
   
   expected_tables <- c("Demographics", "Operations", "NCAbnormality", "NCAA", "Syndromes", "ChromAbnormalities", 
                        "PreopFactors", "Diagnosis", "Procedures", "Complications")
 
 
   df <- lapply(df, function(.table) {  
-    message(c("Table ", attr(.table, "name"), " with ", dim(.table)[1], " rows and ", dim(.table)[2], " columns."))
+    cat(c("\nTable ", attr(.table, "name"), " with ", dim(.table)[1], " rows and ", dim(.table)[2], " columns."))
     if (dim(.table)[1] == 0) {
-      message(c("Table ", attr(.table, "name"), " has no data."))
+      cat(c("\nTable ", attr(.table, "name"), " has no data."))
       return(NULL)
     }
     if (!(("PATID" %in% names(.table)) || ("OPERATIONID" %in% names(.table)))) {
@@ -126,17 +126,17 @@ validate_tables <- function(df) {
   extra <- setdiff(tables, expected_tables)
   
   if (length(missing) > 0) {
-    message(c("\nMissing table(s): ", paste(missing, collapse=", ")))
+    cat(c("\nMissing table(s): ", paste(missing, collapse=", ")))
   }
   
   if (length(extra) > 0) {
-    message(c("\nExtra table(s): ", paste(extra, collapse=", ")))
+    cat(c("\nExtra table(s): ", paste(extra, collapse=", ")))
   }
   
   
   nulls <- sapply(df, is.null)
   if (length(names(df[nulls])) > 0) {
-    message(paste0("\nPurging ", paste(names(df[nulls]), collapse = ", "), " due to lack of header or rows."))
+    cat(paste0("\nPurging ", paste(names(df[nulls]), collapse = ", "), " due to lack of header or rows."))
     df <- df[!nulls]
   }
   
@@ -158,7 +158,7 @@ add_identifiers <- function(df, Case.Master) {
   
   Case.Master <- left_join(Case.Master, select(df$Demographics, PATID, MEDRECN), by="MEDRECN")
   
-  message(c("\nFound ", dim(unique(select(Case.Master,PATID)))[1], " PCGC participant(s) in Demographics table.\n"))
+  cat(c("\nFound ", dim(unique(select(Case.Master,PATID)))[1], " PCGC participant(s) in Demographics table.\n"))
   
   #Add OPERATIONID to Case.Master
   Case.Master <- left_join(Case.Master,select(df$Operations, PATID, OPERATIONID),
@@ -191,12 +191,12 @@ add_identifiers <- function(df, Case.Master) {
 
 # Function to filter and clean tables
 filter_and_clean_tables <- function(df, Case.Master) {
-  message('After filtering rows:')
+  cat('\nAfter filtering rows:')
   df <- lapply(df, function(.table){
     if (invalid(.table)) return(.table)
     
     .table <- .table %>% filter(PCGC.BLINDED.ID %in% Case.Master$PCGC.BLINDED.ID)
-    message(c("Table ", attr(.table, "name"), " with ", dim(.table)[1], " rows and ", dim(.table)[2], " columns."))
+    cat(c("\nTable ", attr(.table, "name"), " with ", dim(.table)[1], " rows and ", dim(.table)[2], " columns."))
     
     col_idx <- grep("PCGC.BLINDED.ID", names(.table))
     .table <- suppressMessages(.table[, c(col_idx, (1:ncol(.table))[-col_idx])])
@@ -211,15 +211,15 @@ filter_and_clean_tables <- function(df, Case.Master) {
 # Function to write output tables
 write_output_tables <- function(df,ZIP_OUTPUT_TABLES = FALSE) {
   OUTPUT_FILE_vec <- NULL
-  message("\n")
+  cat("\n")
   for (.table_name in names(df)) {
     .table <- df[[.table_name]]
     if (invalid(.table)) {
-      message(c("Skipping ", .table_name, " - no data"))
+      cat(c("\nSkipping ", .table_name, " - no data"))
       next
     }
     OUTPUT_FILE <- paste(.table_name, "txt", sep=".")
-    message(c("Writing ",nrow(.table)," records to ",OUTPUT_FILE))
+    cat(c("\nWriting ",nrow(.table)," records to ",OUTPUT_FILE))
     OUTPUT_FILE_vec <- append(OUTPUT_FILE_vec, OUTPUT_FILE)
     suppressWarnings(write.table(.table, OUTPUT_FILE, sep="\t", quote=FALSE, row.names=FALSE, col.names=TRUE))
   }
@@ -228,7 +228,7 @@ write_output_tables <- function(df,ZIP_OUTPUT_TABLES = FALSE) {
   if (ZIP_OUTPUT_TABLES) {
     ZIP_COMMAND <- paste("zip -rm STS_tables.zip", paste(OUTPUT_FILE_vec, collapse=" "))
     system(ZIP_COMMAND, ignore.stdout=TRUE)
-    message("\nZipped up all files into STS_tables.zip!")
+    cat("\nZipped up all files into STS_tables.zip!")
   }
   return(OUTPUT_FILE_vec)
 }
@@ -248,6 +248,10 @@ main <- function(data.file, case.file, ZIP_OUTPUT_TABLES = FALSE) {
 
 }
 
+
 # Call the main function with your specific arguments
 # Replace 'data.file' and 'case.file' with your actual file paths
 main(data.file, case.file, ZIP_OUTPUT_TABLES = ZIP_OUTPUT_TABLES)
+
+
+sink()
