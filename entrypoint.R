@@ -18,7 +18,7 @@
 
 doc <- "
       Usage:
-        entrypoint.R [-h | --help] [--data <data.file>] [--cases <case.file>] [--zip-output-tables]
+        entrypoint.R [-h | --help] [--data <data.file>] [--cases <case.file>] [--zip-output-tables] [--remove <columns-remove>]
 
          
       Options:
@@ -26,6 +26,21 @@ doc <- "
         --data <data.file>    Specify input data file.
         --cases <case.file>   Specify list of cases file.
         --zip-output-tables   Zip output files if specified
+        --remove <columns-remove>
+                              Specify columns to remove from output tables in addition to default columns to remove
+                              Column names should be comma separated and enclosed in quotes
+                              
+                              Default columns to remove: 
+                              MEDRECN, PATFNAME, PATID, PATLNAME, PATMNAME, PATPOSTALCODE, PATREGION, 
+                              BIRTHCIT, BIRTHSTA, HOSPNAME, HOSPNPI, HOSPID, HOSPZIP, HOSPSTAT, 
+                              SURGEON, SURGEONID, SURGNPI, TIN, ASSTSURGEON, ASSTSURGNPI, ASSTSURGEONID, 
+                              HICNUMBER, PATMINIT, PATCOUNTRY, MATNAMEKNOWN, MATSSNKNOWN, MATLNAME, 
+                              MATFNAME, MATMINIT, MATMNAME, MATSSN, PARTICID, VENDORID, CNSLTATTND, 
+                              CNSLTATTNDID, ATTENDSURG, SURGEON, SURGEONID, SURGNPI, ASSTSURGEON, 
+                              ASSTSURGEONID, ASSTSURGNPI, RESIDENT, RESIDENTID, HOSPZIP, HOSPNPI, 
+                              REFCARD, REFPHYS, HANDOFFANESTH, HANDOFFSURG, HANDOFFPHYSSTAFF, 
+                              HANDOFFNURSING, PRIMANESNAME, PRIMANESNPI, SECANES, SECANESNAME, 
+                              CRNA, CRNANAME, NONCVPHYS, FELRES
       "
 opt <- docopt::docopt(doc)
 
@@ -37,6 +52,7 @@ sink("output.log",split=TRUE)
 data.file <- opt[["--data"]]
 case.file <- opt[["--cases"]]
 ZIP_OUTPUT_TABLES <- opt[["--zip-output-tables"]]
+additional_columns_remove <- opt[["--remove"]]
 
 # Define global variables
 Columns_Remove <- toupper(c("MEDRECN", "PATFNAME", "PATID", "PATLNAME", "PATMNAME", "PATPOSTALCODE", "PATREGION", 
@@ -49,6 +65,9 @@ Columns_Remove <- toupper(c("MEDRECN", "PATFNAME", "PATID", "PATLNAME", "PATMNAM
                             "REFCARD", "REFPHYS", "HANDOFFANESTH", "HANDOFFSURG", "HANDOFFPHYSSTAFF", 
                             "HANDOFFNURSING", "PRIMANESNAME", "PRIMANESNPI", "SECANES", "SECANESNAME", 
                             "CRNA", "CRNANAME", "NONCVPHYS", "FELRES"))
+if (!is.null(additional_columns_remove)){
+  Columns_Remove = c(Columns_Remove, toupper(trimws(unlist(strsplit(additional_columns_remove, ",")))))
+  }
 
 # Function to read in data files
 read_data_files <- function(data.file, case.file) {
