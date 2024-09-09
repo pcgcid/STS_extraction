@@ -1,5 +1,21 @@
-# STS extraction
- 
+---
+title: "STS extraction"
+date: September 6, 2024
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(dplyr)
+```
+
+
 ### A Docker container to anonymize/recode STS (Society of Thoracic Surgeons) data
 
 Michael Wagner
@@ -35,11 +51,16 @@ After installation, the software runs on a local computer without requiring an i
 
 See the [Installing Docker](https://degauss.org/using_degauss.html#Installing_Docker) webpage.
 
-> <font size="3.5"> **_Note about Docker Settings:_** </font> <br> <font size="2.75"> After installing Docker, but before running containers, go to **Docker Settings > Advanced** and change **memory** to greater than 4000 MB (or 4 GiB) <br> 
- <center> <img width=75% src="figs/docker_settings_memory.png"> </center> <br> 
-If you are using a Windows computer, also set **CPUs** to 1. <br> 
-<center> <img width=75% src="figs/docker_settings_cpu.png">
-</center> Click **Apply** and wait for Docker to restart. </font>
+**_Note about Docker Settings:_**  
+After installing Docker, but before running containers, go to **Docker Settings > Advanced** and change **memory** to greater than 4000 MB (or 4 GiB) <br> 
+
+\begin{center}
+\includegraphics[width=0.75\textwidth]{../figs/docker_settings_memory.png}
+\end{center}
+
+<!-- <center> ![](../figs/docker_settings_memory.PNG) </center> -->
+<br> If you are using a Windows computer, also set **CPUs** to 1. <br>
+<!-- <center> ![](../figs/docker_settings_cpu.png) </center> Click **Apply** and wait for Docker to restart. -->
 
 ## Step 1: Running the STS container
 
@@ -76,10 +97,10 @@ For example, the following command can be used to create a subset of an STS data
     docker run --rm -v "%cd%":/tmp ghcr.io/pcgcid/sts:latest ^
     --data STS.datafile.txt --cases list.of.cases.txt
     ```
+
 The container will output different files for each table in the STS data file, containing the STS data for the cases in the list. The output files will be stored in the current directory. 
 
 For example, if the input data contains the following tables: `Demographics`, `Operations`, `NCAbnormality`, `NCAA`, `Syndromes`, `ChromAbnormalities`, `PreopFactors`, `Diagnosis`, `Procedures`, `Complications`, the output files will be named `Demographics.txt`, `Operations.txt`, `NCAbnormality.txt`, `NCAA.txt`, `Syndromes.txt`, `ChromAbnormalities.txt`, `PreopFactors.txt`, `Diagnosis.txt`, `Procedures.txt`, `Complications.txt` respectively. If `--zip-output-tables` was used, the output files will be zipped into a file called `STS_tables.zip`.
-
 
 ## Parameters
 
